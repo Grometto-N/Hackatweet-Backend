@@ -28,7 +28,6 @@ router.post('/add', (req, res) => {
  // route pour récupérer tous les trends o
 router.get('/all', (req, res) => {
     Trend.find({ }).then(dataTrends => {
-        console.log('trends', dataTrends);
         if(dataTrends){
             // on envoie les données 
             res.json({ result: true, trends : dataTrends});

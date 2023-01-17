@@ -7,11 +7,10 @@ const User = require('../models/users');
 const Trends= require('../models/trends');
 
 
-// route pour enregistrer user
+// route pour ajouter un nouveau tweet
 router.post('/add', (req, res) => {
     // on cherche l'id de l'utilisateur
    User.findOne({ token : req.body.token}).then(dataUser => {
-    console.log(dataUser)
        if(dataUser){
           // on crée un nouveau tweet
             const newTweet = new Tweet({
@@ -31,22 +30,38 @@ router.post('/add', (req, res) => {
  });
 
  // route pour charger tous les tweets
- router.get('/', (req, res) => {
-    const dataToSend = [];
-    Tweet.find({ }).populate('user').then(dataTweet => {
-        //console.log('là', data);
-        const dataToSendTweets = [];
-        if(dataTweet){
-            // on récupère les tweets
-            for(let item of dataTweet){   
-                dataToSendTweets.push({firstName : item.user.firstName, userName : item.user.userName, message : item.message, date : item.date, likes : item.likes, hashtags : item.hashtags });
-            }
-            // on envoie les données 
-            res.json({ result: true, data : dataToSendTweets});
-        }else{
-            res.json({ result: false, error: 'Tweets not found' });
+ router.post('/', (req, res) => {
+    // on commence par chercher si l'utilisateur existe
+    User.findOne({ token : req.body.token}).then(dataUser => {
+        if(dataUser){
+            // on cherche ensuite les tweets
+            const dataToSend = [];
+            Tweet.find({ }).populate('user').then(dataTweet => {
+                const dataToSendTweets = [];
+                if(dataTweet){
+                    // on récupère les informations des tweets sous forme d'un objet
+                    for(let item of dataTweet){  
+                        // vérification si l'utilisateur a liké ce tweet
+                        dataToSendTweets.push({
+                            firstName : item.user.firstName, 
+                            userName : item.user.userName, 
+                            message : item.message, 
+                            date : item.date, 
+                            likes : item.likes, 
+                            isLikedByUser : item.likes.includes(dataUser.id),
+                            isUserTweet : (item.user.userName === dataUser.userName),
+                            hashtags : item.hashtags });
+                    }
+                    // on envoie les données au frontend
+                    res.json({ result: true, data : dataToSendTweets});
+                }else{
+                    res.json({ result: false, error: 'Tweets not found' });
+                }
+              });
         }
-      });
+
+    });
+   
 
  })
 
@@ -59,19 +74,23 @@ router.post('/add', (req, res) => {
             User.findOne({token : req.body.token}).then(dataUser =>{ 
                 if(dataUser){
                     let  newLikes =dataTweet.likes;
+                    let likedByUser = false;
                     // on vérifie si le user est déja dedans
                     if(!dataTweet.likes.some(elt => elt.id === dataUser.id)){
                         // il n'a pas encore liké, on l'ajoute
                         newLikes.push(dataUser.id);
+                        likedByUser = true;
                      }else{
                         // l'user est déja dedans on le supprime
                         newLikes = newLikes.filter(elt => elt.id !== dataUser.id);
+                        likedByUser = false;
                     }
                     // on met à jour la DB
                     Tweet.findOneAndUpdate({message : req.body.message },{$set: {  likes : newLikes }})
                     .then(dataTweet => {
                             if(dataTweet){
-                                res.json({ result: true });
+                                const nbLike = likedByUser ? dataTweet.likes.length +1 : dataTweet.likes.length -1;
+                                res.json({ result: true , likedByUser : likedByUser, nbLike : nbLike});
                             }else{
                                 res.json({ result: false, error: 'Tweets not update' });
                             } 
