@@ -6,23 +6,14 @@ const Tweet = require('../models/tweet');
 const User = require('../models/users');
 const Trend= require('../models/trends');
 
-// route pour enregistrer un trend ou le mettre à jour en DB
+// route pour mettre à jour en DB un trend ou le rajouter s'il n'existe pas encore
 router.post('/add', (req, res) => {
-    // on cherche si le hashtag existe
-    Trend.findOneAndUpdate({ hashtag : req.body.hashtag},{'$push': {tweets
-    : req.body.idTweet}}).then(dataTrends => {
-        if(!dataTrends){
-          //on crée le trend
-            const newTrend = new Trend({
-            hashtag : req.body.hashtag,
-            tweets: [req.body.idTweet],
-            });
-            // enregistrement
-            newTrend.save().then(newTrend => {newTrend !== null ? res.json({ result: true}) : res.json({ result: false}) })
-        }else{
+    Trend.updateMany({ "hashtag": { "$in" : req.body.hashtags } },
+        { "$push" : {tweets : req.body.idTweet}},
+        {upsert : true},
+        ).then(dataTrends => {
             {res.json({ result: true}) }
-        }
-    })
+        })
  });
 
  // route pour récupérer tous les trends o

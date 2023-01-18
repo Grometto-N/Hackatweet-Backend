@@ -21,7 +21,7 @@ router.post('/add', (req, res) => {
                 hashtags: req.body.hashtags,
             });
           // enregistrement
-          newTweet.save().then(newDoc => {res.json({ result: true , id : newDoc.id}) })
+          newTweet.save().then(newTweet => {res.json({ result: true , tweetId : newTweet.id}) })
        }else{
             res.json({ result: false, error: 'User not find' });
        }
@@ -37,12 +37,12 @@ router.post('/add', (req, res) => {
             // on cherche ensuite les tweets
             const dataToSend = [];
             Tweet.find({ }).populate('user').then(dataTweet => {
-                const dataToSendTweets = [];
+                const dataToSendTweets = []; // tableau pour envoyer ce qui nous intéresse concernant le tweet
                 if(dataTweet){
                     // on récupère les informations des tweets sous forme d'un objet
                     for(let item of dataTweet){  
-                        // vérification si l'utilisateur a liké ce tweet
                         dataToSendTweets.push({
+                            tweetId : item.id,
                             firstName : item.user.firstName, 
                             userName : item.user.userName, 
                             message : item.message, 
@@ -108,5 +108,31 @@ router.post('/add', (req, res) => {
     })
 
  })
+
+ // route permettant de supprimer un tweet
+router.delete('/one', (req, res) => { 
+// on vérifie que le token correspond bien à un utilisateur en DB (ce qui permettra de comparer le nom)
+User.findOne({token : req.body.token}).then(dataUser =>{
+    if(dataUser){
+        Tweet.findOne({_id : req.body.id}).populate('user').then(dataTweet =>{
+            // on vérifie que le tweet appartient bien à l'utilisateur
+            if(dataUser.id === dataTweet.user.id){
+                Tweet.deleteOne({_id : req.body.id}).then(dataDelete =>{
+                    res.json({ result: true})
+                })
+            }
+
+            if(dataUser.id !== dataTweet.user.id){
+                res.json({ result: false, error: "Not user's tweet" })
+            }
+        })
+
+    }else{
+        res.json({ result: false, error: 'User not found' });
+    }
+
+})
+
+})
 
 module.exports = router;
