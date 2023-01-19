@@ -65,6 +65,42 @@ router.post('/add', (req, res) => {
 
  })
 
+  // route pour charger tous les tweets vérifiant un hashtag particulier
+  router.post('/:hashtag', (req, res) => {
+    // on commence par chercher si l'utilisateur existe
+    User.findOne({ token : req.body.token}).then(dataUser => {
+        if(dataUser){
+            // on cherche ensuite les tweets vérifiant la condition
+            const hashtagSearching = `#${req.params.hashtag}`
+            Tweet.find({hashtags : { "$in" : hashtagSearching }}).populate('user').then(dataTweet => {
+                const dataToSendTweets = []; // tableau pour envoyer les infos qui nous intéressent dans l'objet tweet
+                if(dataTweet){
+                    // on récupère les informations des tweets sous forme d'un objet
+                    for(let item of dataTweet){  
+                        dataToSendTweets.push({
+                            tweetId : item.id,
+                            firstName : item.user.firstName, 
+                            userName : item.user.userName, 
+                            message : item.message, 
+                            date : item.date, 
+                            likes : item.likes, 
+                            isLikedByUser : item.likes.includes(dataUser.id),
+                            isUserTweet : (item.user.userName === dataUser.userName),
+                            hashtags : item.hashtags });
+                    }
+                    // on envoie les données au frontend
+                    res.json({ result: true, data : dataToSendTweets});
+                }else{
+                    res.json({ result: false, error: 'Tweets not found' });
+                }
+              });
+        }
+
+    });
+   
+
+ })
+
  // route pour mettre à jour la liste des users ayant liké le tweet
  router.post('/like', (req, res) => {
     // on cherche si le tweet existe
