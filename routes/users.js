@@ -16,12 +16,13 @@ router.post("/signup", (req, res) => {
       return ;
     }
 
-   // Check if the user has not already been registered
+   // On vérifie si l'utilisateur est déjà enregistré
     User.findOne({
         userName: req.body.userName,
         firstName: req.body.firstName,
     }).then((data) => {
         if (data === null) {
+            
             const hash = bcrypt.hashSync(req.body.password, 10);
 
             const newUser = new User({
@@ -36,7 +37,7 @@ router.post("/signup", (req, res) => {
             });
         }else {
           // le user existe déjà
-          res.json({ result: false, error: "User already exists" });
+          res.json({ result: false, error: "Username already exists" });
         }
     });
 });
