@@ -16,10 +16,10 @@ router.post("/signup", (req, res) => {
       return ;
     }
 
-   // On vérifie si l'utilisateur est déjà enregistré
+   // On vérifie si l'utilisateur est déjà enregistré : on ne le fait que sur le username car dans la maquette le signin se fait que sur le username
     User.findOne({
         userName: req.body.userName,
-        firstName: req.body.firstName,
+        // firstName: req.body.firstName,
     }).then((data) => {
         if (data === null) {
             
